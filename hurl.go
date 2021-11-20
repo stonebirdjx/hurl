@@ -24,7 +24,7 @@ func main() {
 	}
 	switch u.Scheme {
 	case "file", "":
-		// TODO
+		// TODO teset
 	case "http", "https":
 	case "ftp":
 	case "sftp":
