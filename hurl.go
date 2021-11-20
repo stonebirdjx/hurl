@@ -8,6 +8,7 @@ package main
 
 import (
 	"hurl/configs"
+	"hurl/core"
 	"log"
 	"net/url"
 	"strings"
@@ -24,7 +25,7 @@ func main() {
 	}
 	switch u.Scheme {
 	case "file", "":
-		// TODO teset
+		core.FileHandle(u)
 	case "http", "https":
 	case "ftp":
 	case "sftp":
