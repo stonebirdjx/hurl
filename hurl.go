@@ -9,8 +9,10 @@ package main
 import (
 	"hurl/configs"
 	"hurl/core"
+	"hurl/core/file"
 	"log"
 	"net/url"
+	"os"
 	"strings"
 )
 
@@ -27,9 +29,17 @@ func main() {
 	case "file", "":
 		core.FileHandle(u)
 	case "http", "https":
-	case "ftp":
-	case "sftp":
+	case "ftp", "sftp":
+		core.FtpSftpHandle(u)
 	default:
-		log.Fatal("hurl current support file, http, https, ftp, sftp protocol")
+		_, err := os.Stat(text)
+		if err != nil {
+			log.Fatal("hurl current support file, http, https, ftp, sftp protocol")
+		}
+		basicFile, err := file.NewBasicFiler(text)
+		if err != nil {
+			log.Fatal(err)
+		}
+		basicFile.Entrance()
 	}
 }

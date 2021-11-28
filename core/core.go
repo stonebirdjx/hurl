@@ -7,9 +7,13 @@
 package core
 
 import (
+	"hurl/configs"
 	"hurl/core/file"
+	"hurl/core/ftpsftp"
+	"hurl/shares"
 	"log"
 	"net/url"
+	"strings"
 )
 
 // 文件协议消息处理者
@@ -21,4 +25,66 @@ func FileHandle(u *url.URL) {
 		log.Fatal(err)
 	}
 	basicFile.Entrance()
+}
+
+// sftp和ftp消息处理者
+// 传入类型 *url.URL
+func FtpSftpHandle(u *url.URL) {
+	userName := u.User.Username()
+	if userName == "" {
+		userName = *configs.User
+		if userName == "" {
+			log.Fatalf("can not get ftp user")
+		}
+	}
+
+	passWord, ok := u.User.Password()
+	if !ok {
+		passWord = *configs.Password
+	}
+
+	path := u.Path
+	// 以//开头表绝对路径，否则是相对路径
+	if !strings.HasPrefix(path, "//") {
+		path = "." + path
+	}
+
+	// 判断是否使用正则表达式
+	reg, err := shares.IfReg()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var api ftpsftp.BasicApi
+	basicStruct := ftpsftp.BasicStruct{
+		Path:     path,
+		Host:     u.Host,
+		User:     userName,
+		Password: passWord,
+		Walk:     *configs.Walk,
+		Mode:     *configs.Mode,
+		Reg:      reg,
+	}
+
+	switch u.Scheme {
+	case "ftp":
+		api = &ftpsftp.BasicFtp{
+			BasicStruct: basicStruct,
+		}
+	case "sftp":
+		api = &ftpsftp.BasicSftp{
+			BasicStruct: basicStruct,
+		}
+	default:
+		log.Fatal("scheme is not ftp or sftp")
+	}
+
+	switch {
+	case strings.TrimSpace(*configs.Download) != "":
+		api.Download()
+	case strings.TrimSpace(*configs.Upload) != "":
+		api.Upload()
+	default:
+		api.Read()
+	}
 }

@@ -8,6 +8,7 @@ package file
 
 import (
 	"hurl/configs"
+	"hurl/shares"
 	"os"
 	"regexp"
 )
@@ -27,7 +28,7 @@ func NewBasicFiler(path string) (*BasicFile, error) {
 	if err != nil {
 		return nil, err
 	}
-	reg, err := regexp.Compile(*configs.Regexp)
+	reg, err := shares.IfReg()
 	if err != nil {
 		return nil, err
 	}

@@ -6,10 +6,32 @@
 // @Desc: deal file protocol path is file
 package file
 
-import "fmt"
+import (
+	"bufio"
+	"fmt"
+	"log"
+	"os"
+)
 
 // 文件协议单个文件消息入口
 // p: 文件路径
 func (b *BasicFile) single() {
-	fmt.Println("file")
+	f, err := os.Open(b.Path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	bs := bufio.NewScanner(f)
+	switch b.Reg {
+	case nil:
+		for bs.Scan() {
+			fmt.Println(bs.Text())
+		}
+	default:
+		for bs.Scan() {
+			if b.Reg.FindString(bs.Text()) != "" {
+				fmt.Println(bs.Text())
+			}
+		}
+	}
 }

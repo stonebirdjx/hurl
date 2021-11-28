@@ -14,14 +14,20 @@ import (
 )
 
 var (
-	Text    = flag.String("url", "", "enter a net/url text or local path")
-	Walk    = flag.Bool("walk", false, "whether walk to the path")
-	Mode    = flag.String("type", "all", "walk the path type, value must in (all, file ,dir)")
-	Regexp  = flag.String("re", "", "enter the regexp rule to match")
-	h       = flag.Bool("h", false, "print hurl tool help text")
-	help    = flag.Bool("help", false, "print hurl tool help text")
-	v       = flag.Bool("v", false, "print hurl tool version")
-	version = flag.Bool("version", false, "print hurl tool version")
+	Text      = flag.String("url", "", "enter a net/url text or local path")
+	Walk      = flag.Bool("walk", false, "whether walk to the path")
+	Mode      = flag.String("type", "", "walk the path type, value with file or dir")
+	Regexp    = flag.String("re", "", "enter the regexp rule to match")
+	Upload    = flag.String("upload", "", "upload local path to ftp")
+	Download  = flag.String("download", "", "download ftp to local path")
+	ReadBytes = flag.Int64("byte", maxBytes, "byte array max length default 10M")
+	User      = flag.String("user", "", "enter the user name")
+	Password  = flag.String("password", "", "enter the user password")
+	Currency  = flag.Int("u", 5, "enter the number of concurrent")
+	h         = flag.Bool("h", false, "print hurl tool help text")
+	help      = flag.Bool("help", false, "print hurl tool help text")
+	v         = flag.Bool("v", false, "print hurl tool version")
+	version   = flag.Bool("version", false, "print hurl tool version")
 )
 
 func init() {
