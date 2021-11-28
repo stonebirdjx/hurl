@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/jlaffaye/ftp"
+	"hurl/configs"
 	"log"
 	"strings"
 )
@@ -58,7 +59,7 @@ func (bf *BasicFtp) walkDirModeReg(walker *ftp.Walker) {
 		if !next {
 			continue
 		}
-		if bf.Reg.FindString(entry.Name) != "" {
+		if bf.Reg.FindString(entry.Name) != configs.EmptyString {
 			fmt.Println(walker.Path())
 		}
 	}
@@ -67,12 +68,12 @@ func (bf *BasicFtp) walkDirModeReg(walker *ftp.Walker) {
 func (bf *BasicFtp) walkDirModeBase(walker *ftp.Walker) (*ftp.Entry, bool) {
 	entry := walker.Stat()
 	switch bf.Mode {
-	case "file":
-		if entry.Type.String() == "folder" {
+	case configs.File:
+		if entry.Type.String() == configs.Folder {
 			return nil, false
 		}
-	case "dir":
-		if entry.Type.String() != "folder" {
+	case configs.Dir:
+		if entry.Type.String() != configs.Folder {
 			return nil, false
 		}
 	}
@@ -107,7 +108,7 @@ func (bf *BasicFtp) readDirMode(entries []*ftp.Entry) {
 
 func (bf *BasicFtp) readDirModeReg(entries []*ftp.Entry) {
 	for _, entry := range entries {
-		if bf.Reg.FindString(entry.Name) == "" {
+		if bf.Reg.FindString(entry.Name) == configs.EmptyString {
 			continue
 		}
 		bf.readDirModeBase(entry)
@@ -117,22 +118,22 @@ func (bf *BasicFtp) readDirModeReg(entries []*ftp.Entry) {
 func (bf *BasicFtp) readDirModeBase(entry *ftp.Entry) {
 	fType := ""
 	switch bf.Mode {
-	case "dir":
-		if entry.Type.String() != "folder" {
+	case configs.Dir:
+		if entry.Type.String() != configs.Folder {
 			return
 		}
-		fType = "<DIR>"
-	case "file":
-		if entry.Type.String() == "folder" {
+		fType = configs.FileDir
+	case configs.File:
+		if entry.Type.String() == configs.Folder {
 			return
 		}
 	default:
-		if entry.Type.String() == "folder" {
-			fType = "<DIR>"
+		if entry.Type.String() == configs.Folder {
+			fType = configs.FileDir
 		}
 	}
 	fmt.Printf("%s %5s %15d %s\n",
-		entry.Time.Format("2006-01-02 15:04:05"),
+		entry.Time.Format(configs.TimeFormat),
 		fType,
 		entry.Size,
 		entry.Name)
@@ -160,7 +161,7 @@ func (bf *BasicFtp) readFile() {
 		}
 	default:
 		for bs.Scan() {
-			if bf.Reg.FindString(bs.Text()) != "" {
+			if bf.Reg.FindString(bs.Text()) != configs.EmptyString {
 				fmt.Println(bs.Text())
 			}
 		}

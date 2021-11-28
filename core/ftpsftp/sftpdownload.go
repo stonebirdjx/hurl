@@ -87,16 +87,16 @@ func (bsf *BasicSftp) downloadDir(local string) {
 func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
 	fileInfo := walker.Stat()
 	if bsf.Reg != nil {
-		if bsf.Reg.FindString(fileInfo.Name()) == "" {
+		if bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
 			return transport{}, false
 		}
 	}
 	var tr transport
 	tr.name = fileInfo.Name()
 	if fileInfo.IsDir() {
-		tr.tp = "dir"
+		tr.tp = configs.Dir
 	} else {
-		tr.tp = "file"
+		tr.tp = configs.File
 	}
 	tr.size = uint64(fileInfo.Size())
 	tr.site = walker.Path()
@@ -126,7 +126,7 @@ func (bsf *BasicSftp) downloadRangFile(i int, local string) {
 	for tr := range trChan {
 		localPath := filepath.Join(local, tr.relative)
 		dir := localPath
-		if tr.tp != "dir" {
+		if tr.tp != configs.Dir {
 			dir = filepath.Dir(localPath)
 		}
 		err = cmLocalDir(dir)
@@ -134,7 +134,7 @@ func (bsf *BasicSftp) downloadRangFile(i int, local string) {
 			log.Fatalf("%s check dir err %s", thread, err)
 		}
 
-		if tr.tp == "dir" {
+		if tr.tp == configs.Dir {
 			continue
 		}
 

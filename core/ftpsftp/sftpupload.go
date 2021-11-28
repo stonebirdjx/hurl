@@ -77,7 +77,7 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 		relative := strings.TrimPrefix(tr.site, local)
 		sftpFile := filepath.Join(bsf.Path, relative)
 		sftpDir := filepath.ToSlash(sftpFile)
-		if tr.tp == "file" {
+		if tr.tp == configs.File {
 			sftpDir = filepath.Dir(sftpDir)
 		}
 		sftpDir = filepath.ToSlash(sftpDir)
@@ -87,7 +87,7 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if tr.tp == "dir" {
+		if tr.tp == configs.Dir {
 			continue
 		}
 
@@ -109,7 +109,7 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 		return err
 	}
 	if bsf.Reg != nil {
-		if bsf.Reg.FindString(info.Name()) == "" {
+		if bsf.Reg.FindString(info.Name()) == configs.EmptyString {
 			return nil
 		}
 	}
@@ -117,9 +117,9 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
 	if info.IsDir() {
-		tr.tp = "dir"
+		tr.tp = configs.Dir
 	} else {
-		tr.tp = "file"
+		tr.tp = configs.File
 	}
 	tr.site = path
 	trChan <- tr

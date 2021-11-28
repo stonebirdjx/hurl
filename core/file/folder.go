@@ -8,6 +8,7 @@ package file
 
 import (
 	"fmt"
+	"hurl/configs"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -61,22 +62,22 @@ func (b *BasicFile) readDirDealModeReg(fileInfos []fs.FileInfo) {
 func (b *BasicFile) readDirPrint(fileInfo fs.FileInfo) {
 	fType := ""
 	switch b.Mode {
-	case "file":
+	case configs.File:
 		if fileInfo.IsDir() {
 			return
 		}
-	case "dir":
+	case configs.Dir:
 		if !fileInfo.IsDir() {
 			return
 		}
-		fType = "<DIR>"
+		fType = configs.FileDir
 	default:
 		if fileInfo.IsDir() {
-			fType = "<DIR>"
+			fType = configs.FileDir
 		}
 	}
 	fmt.Printf("%s %5s %15d %s\n",
-		fileInfo.ModTime().Format("2006-01-02 15:04:05"),
+		fileInfo.ModTime().Format(configs.TimeFormat),
 		fType,
 		fileInfo.Size(),
 		fileInfo.Name(),
@@ -97,17 +98,17 @@ func (b *BasicFile) visit(path string, info os.FileInfo, err error) error {
 		return err
 	}
 	switch b.Mode {
-	case "file":
+	case configs.File:
 		if info.IsDir() {
 			return nil
 		}
-	case "dir":
+	case configs.Dir:
 		if !info.IsDir() {
 			return nil
 		}
 	}
 	if b.Reg != nil {
-		if b.Reg.FindString(path) != "" {
+		if b.Reg.FindString(path) != configs.EmptyString {
 			fmt.Println(path)
 		}
 	} else {

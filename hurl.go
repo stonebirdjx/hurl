@@ -26,10 +26,10 @@ func main() {
 		log.Fatal(err)
 	}
 	switch u.Scheme {
-	case "file", "":
+	case configs.FileScheme, configs.EmptyString:
 		core.FileHandle(u)
-	case "http", "https":
-	case "ftp", "sftp":
+	case configs.HttpScheme, configs.HttpsScheme:
+	case configs.FtpScheme, configs.SftpScheme:
 		core.FtpSftpHandle(u)
 	default:
 		_, err := os.Stat(text)

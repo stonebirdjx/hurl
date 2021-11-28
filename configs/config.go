@@ -10,6 +10,17 @@ const (
 	toolName    = "everything hurl"
 	toolVersion = "v2.0.0"
 	maxBytes    = 1 << 20
+	File        = "file"
+	FileDir     = "<DIR>"
+	Dir         = "dir"
+	Folder      = "folder"
+	EmptyString = ""
+	TimeFormat  = "2006-01-02 15:04:05"
+	FileScheme  = File
+	FtpScheme   = "ftp"
+	SftpScheme  = "sftp"
+	HttpScheme  = "http"
+	HttpsScheme = "https"
 )
 
 var versionInfo = `

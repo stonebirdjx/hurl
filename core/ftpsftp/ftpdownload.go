@@ -113,14 +113,14 @@ func (bf *BasicFtp) downloadRangFile(i int, local string) {
 		start := float64(time.Now().UnixNano())
 		localPath := filepath.Join(local, tr.relative)
 		dir := localPath
-		if tr.tp != "dir" {
+		if tr.tp != configs.Dir {
 			dir = filepath.Dir(localPath)
 		}
 		err := cmLocalDir(dir)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if tr.tp == "dir" {
+		if tr.tp == configs.Dir {
 			continue
 		}
 
@@ -151,7 +151,8 @@ func (bf *BasicFtp) downloadFile(local string) {
 		log.Fatal(err)
 	}
 
-	if len(entries) != 1 {
+	l := 1
+	if len(entries) != l {
 		log.Fatal("ftp path dir must end with /")
 	}
 

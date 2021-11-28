@@ -70,7 +70,7 @@ func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 		relative := strings.TrimPrefix(tr.site, local)
 		ftpFile := filepath.Join(bf.Path, relative)
 		ftpDir := filepath.ToSlash(ftpFile)
-		if tr.tp == "file" {
+		if tr.tp == configs.File {
 			ftpDir = filepath.Dir(ftpDir)
 		}
 		ftpDir = filepath.ToSlash(ftpDir)
@@ -78,7 +78,7 @@ func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if tr.tp == "dir" {
+		if tr.tp == configs.Dir {
 			continue
 		}
 		err = ftpUploadBase(c, ftpFile, tr.site)
@@ -100,7 +100,7 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 	}
 	fp = filepath.ToSlash(fp)
 	if bf.Reg != nil {
-		if bf.Reg.FindString(info.Name()) == "" {
+		if bf.Reg.FindString(info.Name()) == configs.EmptyString {
 			return nil
 		}
 	}
@@ -108,9 +108,9 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
 	if info.IsDir() {
-		tr.tp = "dir"
+		tr.tp = configs.Dir
 	} else {
-		tr.tp = "file"
+		tr.tp = configs.File
 	}
 	tr.site = fp
 	trChan <- tr
@@ -186,7 +186,7 @@ func cmFtpPath(c *ftp.ServerConn, path string) error {
 }
 
 func checkPath(c *ftp.ServerConn, path string) error {
-	if path == "" {
+	if path == configs.EmptyString {
 		return nil
 	}
 	err := c.ChangeDir(path)

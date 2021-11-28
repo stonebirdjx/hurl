@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"fmt"
 	walkfs "github.com/kr/fs"
+	"hurl/configs"
 	"io/fs"
 	"log"
 	"os"
@@ -50,7 +51,7 @@ func (bsf *BasicSftp) readFile() {
 		}
 	default:
 		for bs.Scan() {
-			if bsf.Reg.FindString(bs.Text()) != "" {
+			if bsf.Reg.FindString(bs.Text()) != configs.EmptyString {
 				fmt.Println(bs.Text())
 			}
 		}
@@ -90,7 +91,7 @@ func (bsf *BasicSftp) readDirDealMode(fileInfos []fs.FileInfo) {
 // 判断正则信息后打印
 func (bsf *BasicSftp) readDirDealModeReg(fileInfos []fs.FileInfo) {
 	for _, fileInfo := range fileInfos {
-		if bsf.Reg.FindString(fileInfo.Name()) == "" {
+		if bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
 			continue
 		}
 		bsf.readDirPrint(fileInfo)
@@ -101,18 +102,18 @@ func (bsf *BasicSftp) readDirDealModeReg(fileInfos []fs.FileInfo) {
 func (bsf *BasicSftp) readDirPrint(fileInfo fs.FileInfo) {
 	fType := ""
 	switch bsf.Mode {
-	case "file":
+	case configs.File:
 		if fileInfo.IsDir() {
 			return
 		}
-	case "dir":
+	case configs.Dir:
 		if !fileInfo.IsDir() {
 			return
 		}
-		fType = "<DIR>"
+		fType = configs.FileDir
 	default:
 		if fileInfo.IsDir() {
-			fType = "<DIR>"
+			fType = configs.FileDir
 		}
 	}
 	fmt.Printf("%s %5s %15d %s\n",
@@ -157,7 +158,7 @@ func (bsf *BasicSftp) walkDirModeReg(walker *walkfs.Walker) {
 		if !next {
 			continue
 		}
-		if bsf.Reg.FindString(fileInfo.Name()) != "" {
+		if bsf.Reg.FindString(fileInfo.Name()) != configs.EmptyString {
 			fmt.Println(walker.Path())
 		}
 	}
@@ -167,11 +168,11 @@ func (bsf *BasicSftp) walkDirModeReg(walker *walkfs.Walker) {
 func (bsf *BasicSftp) walkDirModeBase(walker *walkfs.Walker) (os.FileInfo, bool) {
 	fileInfo := walker.Stat()
 	switch bsf.Mode {
-	case "file":
+	case configs.File:
 		if fileInfo.IsDir() {
 			return fileInfo, false
 		}
-	case "dir":
+	case configs.Dir:
 		if !fileInfo.IsDir() {
 			return fileInfo, false
 		}
