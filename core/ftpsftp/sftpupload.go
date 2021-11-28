@@ -108,10 +108,8 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
-	if bsf.Reg != nil {
-		if bsf.Reg.FindString(info.Name()) == configs.EmptyString {
-			return nil
-		}
+	if bsf.Reg != nil && bsf.Reg.FindString(info.Name()) == configs.EmptyString {
+		return nil
 	}
 	var tr transport
 	tr.name = info.Name()

@@ -99,10 +99,8 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 		log.Fatalln(err)
 	}
 	fp = filepath.ToSlash(fp)
-	if bf.Reg != nil {
-		if bf.Reg.FindString(info.Name()) == configs.EmptyString {
-			return nil
-		}
+	if bf.Reg != nil && bf.Reg.FindString(info.Name()) == configs.EmptyString {
+		return nil
 	}
 	var tr transport
 	tr.name = info.Name()

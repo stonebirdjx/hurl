@@ -76,10 +76,8 @@ func (bf *BasicFtp) downloadDir(local string) {
 
 func (bf *BasicFtp) toChan(walker *ftp.Walker) (transport, bool) {
 	entry := walker.Stat()
-	if bf.Reg != nil {
-		if bf.Reg.FindString(entry.Name) == "" {
-			return transport{}, false
-		}
+	if bf.Reg != nil && bf.Reg.FindString(entry.Name) == configs.EmptyString {
+		return transport{}, false
 	}
 	var tr transport
 	tr.name = entry.Name

@@ -86,10 +86,8 @@ func (bsf *BasicSftp) downloadDir(local string) {
 
 func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
 	fileInfo := walker.Stat()
-	if bsf.Reg != nil {
-		if bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
-			return transport{}, false
-		}
+	if bsf.Reg != nil && bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
+		return transport{}, false
 	}
 	var tr transport
 	tr.name = fileInfo.Name()
