@@ -9,8 +9,10 @@ package ftpsftp
 import (
 	"bufio"
 	"fmt"
+	walkfs "github.com/kr/fs"
 	"io/fs"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -67,6 +69,7 @@ func (bsf *BasicSftp) readDir() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	// 先判断是否有正则
 	switch bsf.Reg {
 	case nil:
 		bsf.readDirDealMode(fileInfos)
@@ -76,12 +79,15 @@ func (bsf *BasicSftp) readDir() {
 
 }
 
+// 没正则直接打印
 func (bsf *BasicSftp) readDirDealMode(fileInfos []fs.FileInfo) {
 	for _, fileInfo := range fileInfos {
 		bsf.readDirPrint(fileInfo)
 	}
 
 }
+
+// 判断正则信息后打印
 func (bsf *BasicSftp) readDirDealModeReg(fileInfos []fs.FileInfo) {
 	for _, fileInfo := range fileInfos {
 		if bsf.Reg.FindString(fileInfo.Name()) == "" {
@@ -91,6 +97,7 @@ func (bsf *BasicSftp) readDirDealModeReg(fileInfos []fs.FileInfo) {
 	}
 }
 
+// 基础打印
 func (bsf *BasicSftp) readDirPrint(fileInfo fs.FileInfo) {
 	fType := ""
 	switch bsf.Mode {
@@ -116,6 +123,58 @@ func (bsf *BasicSftp) readDirPrint(fileInfo fs.FileInfo) {
 	)
 }
 
+// walk 遍历文件夹
 func (bsf *BasicSftp) walkDir() {
+	c, err := bsf.login()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer c.Close()
+	walker := c.Walk(bsf.Path)
+	switch bsf.Reg {
+	case nil:
+		bsf.walkDirMode(walker)
+	default:
+		bsf.walkDirModeReg(walker)
+	}
+}
 
+// 没有正则的情况下遍历文件夹
+func (bsf *BasicSftp) walkDirMode(walker *walkfs.Walker) {
+	for walker.Step() {
+		_, next := bsf.walkDirModeBase(walker)
+		if !next {
+			continue
+		}
+		fmt.Println(walker.Path())
+	}
+}
+
+// 有正则的情况下遍历文件夹
+func (bsf *BasicSftp) walkDirModeReg(walker *walkfs.Walker) {
+	for walker.Step() {
+		fileInfo, next := bsf.walkDirModeBase(walker)
+		if !next {
+			continue
+		}
+		if bsf.Reg.FindString(fileInfo.Name()) != "" {
+			fmt.Println(walker.Path())
+		}
+	}
+}
+
+// walk遍历文件夹公共方法
+func (bsf *BasicSftp) walkDirModeBase(walker *walkfs.Walker) (os.FileInfo, bool) {
+	fileInfo := walker.Stat()
+	switch bsf.Mode {
+	case "file":
+		if fileInfo.IsDir() {
+			return fileInfo, false
+		}
+	case "dir":
+		if !fileInfo.IsDir() {
+			return fileInfo, false
+		}
+	}
+	return fileInfo, true
 }

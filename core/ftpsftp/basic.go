@@ -6,7 +6,10 @@
 // @Desc: sftp or ftp protocol basic information
 package ftpsftp
 
-import "regexp"
+import (
+	"regexp"
+	"sync"
+)
 
 type BasicApi interface {
 	Read()
@@ -31,3 +34,14 @@ type Joint struct {
 
 type BasicFtp Joint
 type BasicSftp Joint
+
+type transport struct {
+	name     string // 名称
+	tp       string // dir, file, link会被当file传上传
+	size     uint64 // 文件大小
+	relative string // 相对路径
+	site     string // 本地位置
+}
+
+var trChan = make(chan transport)
+var mutex sync.Mutex

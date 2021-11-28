@@ -30,7 +30,3 @@ func (bsf *BasicSftp) login() (*sftp.Client, error) {
 	}
 	return sftpClient, nil
 }
-
-func (bsf *BasicSftp) Download() {
-
-}

@@ -6,14 +6,19 @@
 // @Desc:
 package ftpsftp
 
-func (bf *BasicFtp) Read() {
+import (
+	"github.com/jlaffaye/ftp"
+	"time"
+)
 
-}
-
-func (bf *BasicFtp) Upload() {
-
-}
-
-func (bf *BasicFtp) Download() {
-
+func (bf *BasicFtp) login() (*ftp.ServerConn, error) {
+	c, err := ftp.Dial(bf.Host, ftp.DialWithTimeout(5*time.Second))
+	if err != nil {
+		return nil, err
+	}
+	err = c.Login(bf.User, bf.Password)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

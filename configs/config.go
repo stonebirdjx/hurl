@@ -9,7 +9,7 @@ package configs
 const (
 	toolName    = "everything hurl"
 	toolVersion = "v2.0.0"
-	maxBytes    = 1 << 20 * 10
+	maxBytes    = 1 << 20
 )
 
 var versionInfo = `
