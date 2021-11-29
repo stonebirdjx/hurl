@@ -80,9 +80,9 @@ func FtpSftpHandle(u *url.URL) {
 	}
 
 	switch {
-	case strings.TrimSpace(*configs.Download) != "":
+	case strings.TrimSpace(*configs.Download) != configs.EmptyString:
 		api.Download()
-	case strings.TrimSpace(*configs.Upload) != "":
+	case strings.TrimSpace(*configs.Upload) != configs.EmptyString:
 		api.Upload()
 	default:
 		api.Read()
