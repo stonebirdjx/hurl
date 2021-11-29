@@ -21,6 +21,7 @@ func (b *BasicFile) single() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	bs := bufio.NewScanner(f)
 	switch b.Reg {
 	case nil:

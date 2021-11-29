@@ -20,24 +20,25 @@ import (
 func (b *BasicFile) folder() {
 	switch b.Walk {
 	case true:
-		b.walkDir()
+		b.walkDir() // walk文件夹目录
 	default:
-		b.readDir()
+		b.readDir() // 读取当前文件夹
 	}
 }
 
-// 读取文件夹信息
+// 读取当前文件夹信息
 func (b *BasicFile) readDir() {
 	fileInfos, err := ioutil.ReadDir(b.Path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	// 先判断reg是否为nil
+
+	// 先判断reg是否为nil,减少判断次数
 	switch b.Reg {
 	case nil:
-		b.readDirDealMode(fileInfos)
+		b.readDirDealMode(fileInfos) // 没配正则执行
 	default:
-		b.readDirDealModeReg(fileInfos)
+		b.readDirDealModeReg(fileInfos) // 正则执行
 	}
 }
 
@@ -51,7 +52,7 @@ func (b *BasicFile) readDirDealMode(fileInfos []fs.FileInfo) {
 // 有正则先执行正则
 func (b *BasicFile) readDirDealModeReg(fileInfos []fs.FileInfo) {
 	for _, fileInfo := range fileInfos {
-		if b.Reg.FindString(fileInfo.Name()) == "" {
+		if b.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
 			continue
 		}
 		b.readDirPrint(fileInfo)

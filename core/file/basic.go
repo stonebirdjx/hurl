@@ -28,10 +28,12 @@ func NewBasicFiler(path string) (*BasicFile, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	reg, err := shares.IfReg()
 	if err != nil {
 		return nil, err
 	}
+
 	return &BasicFile{
 		Path:  path,
 		IsDir: pathStat.IsDir(),
@@ -46,6 +48,6 @@ func (b *BasicFile) Entrance() {
 	if b.IsDir {
 		b.folder() // 文件夹浏览
 	} else {
-		b.single()
+		b.single() // 文件浏览
 	}
 }

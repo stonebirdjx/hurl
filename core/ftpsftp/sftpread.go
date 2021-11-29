@@ -117,7 +117,7 @@ func (bsf *BasicSftp) readDirPrint(fileInfo fs.FileInfo) {
 		}
 	}
 	fmt.Printf("%s %5s %15d %s\n",
-		fileInfo.ModTime().Format("2006-01-02 15:04:05"),
+		fileInfo.ModTime().Format(configs.TimeFormat),
 		fType,
 		fileInfo.Size(),
 		fileInfo.Name(),
