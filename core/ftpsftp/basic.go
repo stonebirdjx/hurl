@@ -7,6 +7,9 @@
 package ftpsftp
 
 import (
+	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"sync"
 )
@@ -45,3 +48,40 @@ type transport struct {
 
 var trChan = make(chan transport)
 var mutex sync.Mutex
+
+// sftp,ftp 下载时本地必须是文件夹,不存在时创建
+func downloadPathIsDir(local string) {
+	localInfo, err := os.Stat(local)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(local, 0644)
+			if err != nil {
+				log.Fatal(err)
+			}
+		} else {
+			log.Fatal(err)
+		}
+	} else if !localInfo.IsDir() {
+		log.Fatal("local path is not a dir")
+	}
+}
+
+// 检查或者创建本地文件夹
+func cmLocalDir(dir string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+	fileInfo, err := os.Stat(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err := os.MkdirAll(dir, 0644)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	} else if !fileInfo.IsDir() {
+		return fmt.Errorf("%s exist, but is not a dir", dir)
+	}
+	return nil
+}

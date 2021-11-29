@@ -15,7 +15,7 @@ import (
 func IfReg() (*regexp.Regexp, error) {
 	var re *regexp.Regexp
 	var err error
-	if *configs.Regexp != "" {
+	if *configs.Regexp != configs.EmptyString {
 		re, err = regexp.Compile(*configs.Regexp)
 	}
 	return re, err

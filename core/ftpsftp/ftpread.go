@@ -15,15 +15,16 @@ import (
 	"strings"
 )
 
+// ftp协议读取入口
 func (bf *BasicFtp) Read() {
 	if strings.HasSuffix(bf.Path, "/") {
 		if bf.Walk {
-			bf.walkDir()
+			bf.walkDir() // walk文件夹
 		} else {
-			bf.readDir()
+			bf.readDir() // 读取当前文件夹
 		}
 	} else {
-		bf.readFile()
+		bf.readFile() // 读取单个文件
 	}
 }
 
@@ -34,6 +35,7 @@ func (bf *BasicFtp) walkDir() {
 		log.Fatal(err)
 	}
 	defer c.Quit()
+
 	walker := c.Walk(bf.Path)
 	switch bf.Reg {
 	case nil:
@@ -43,6 +45,7 @@ func (bf *BasicFtp) walkDir() {
 	}
 }
 
+// ftp没有正则walk读取文件夹
 func (bf *BasicFtp) walkDirMode(walker *ftp.Walker) {
 	for walker.Next() {
 		_, next := bf.walkDirModeBase(walker)
@@ -53,6 +56,7 @@ func (bf *BasicFtp) walkDirMode(walker *ftp.Walker) {
 	}
 }
 
+// ftp正则读取文件夹
 func (bf *BasicFtp) walkDirModeReg(walker *ftp.Walker) {
 	for walker.Next() {
 		entry, next := bf.walkDirModeBase(walker)
@@ -65,6 +69,7 @@ func (bf *BasicFtp) walkDirModeReg(walker *ftp.Walker) {
 	}
 }
 
+// 基础函数
 func (bf *BasicFtp) walkDirModeBase(walker *ftp.Walker) (*ftp.Entry, bool) {
 	entry := walker.Stat()
 	switch bf.Mode {
@@ -92,6 +97,7 @@ func (bf *BasicFtp) readDir() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	switch bf.Reg {
 	case nil:
 		bf.readDirMode(entries)

@@ -20,13 +20,16 @@ func (bsf *BasicSftp) login() (*sftp.Client, error) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 		Timeout:         10 * time.Second,
 	}
+
 	sshClient, err := ssh.Dial("tcp", bsf.Host, &config)
 	if err != nil {
 		return nil, err
 	}
+
 	sftpClient, err := sftp.NewClient(sshClient)
 	if err != nil {
 		return nil, err
 	}
+
 	return sftpClient, nil
 }

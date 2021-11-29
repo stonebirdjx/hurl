@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// ftp协议上载方法主要入口
 func (bf *BasicFtp) Upload() {
 	if !strings.HasSuffix(bf.Path, "/") {
 		log.Fatal("upload mode ftp path must end with /")
@@ -28,12 +29,13 @@ func (bf *BasicFtp) Upload() {
 		log.Fatal(err)
 	}
 	if fileInfo.IsDir() {
-		bf.uploadDir(local) // deal with dir
+		bf.uploadDir(local)
 	} else {
-		bf.uploadFile(fileInfo) // deal with file
+		bf.uploadFile(fileInfo)
 	}
 }
 
+// 上传文件夹
 func (bf *BasicFtp) uploadDir(local string) {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -53,12 +55,11 @@ func (bf *BasicFtp) uploadDir(local string) {
 		}(i)
 	}
 	wg.Wait()
-
 }
 
+// 多线程上传文件
 func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 	thread := "[ftp-upload-thread-" + fmt.Sprint(i) + "]:"
-
 	c, err := bf.login()
 	if err != nil {
 		log.Fatal(err)
@@ -74,17 +75,21 @@ func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 			ftpDir = filepath.Dir(ftpDir)
 		}
 		ftpDir = filepath.ToSlash(ftpDir)
+
 		err := cmFtpPath(c, ftpDir)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		if tr.tp == configs.Dir {
 			continue
 		}
+
 		err = ftpUploadBase(c, ftpFile, tr.site)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		end := float64(time.Now().UnixNano())
 		fmt.Printf("%s upload %s success totol-size:%d waste-time:%.2fms\n",
 			thread,
@@ -98,10 +103,12 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	fp = filepath.ToSlash(fp)
 	if bf.Reg != nil && bf.Reg.FindString(info.Name()) == configs.EmptyString {
 		return nil
 	}
+
 	var tr transport
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
@@ -116,13 +123,13 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 }
 
 func (bf *BasicFtp) uploadFile(fileInfo os.FileInfo) {
-	start := float64(time.Now().UnixNano())
 	c, err := bf.login()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Quit()
 
+	start := float64(time.Now().UnixNano())
 	err = cmFtpPath(c, bf.Path)
 	if err != nil {
 		log.Fatal(err)
@@ -130,10 +137,12 @@ func (bf *BasicFtp) uploadFile(fileInfo os.FileInfo) {
 
 	localFile := strings.TrimSpace(*configs.Upload)
 	ftpFile := filepath.ToSlash(filepath.Join(bf.Path, fileInfo.Name()))
+
 	err = ftpUploadBase(c, ftpFile, localFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	end := float64(time.Now().UnixNano())
 	fmt.Printf("ftp upload %s success totol-size:%d waste-time:%.2fms\n",
 		localFile,
@@ -155,6 +164,7 @@ func ftpUploadBase(c *ftp.ServerConn, ftpFile, localFile string) error {
 	return nil
 }
 
+// 检查ftppath
 func cmFtpPath(c *ftp.ServerConn, path string) error {
 	mutex.Lock()
 	defer mutex.Unlock()
@@ -170,12 +180,14 @@ func cmFtpPath(c *ftp.ServerConn, path string) error {
 			return err
 		}
 	}
+
 	for _, p := range paths {
 		err := checkPath(c, p)
 		if err != nil {
 			return err
 		}
 	}
+
 	err = c.ChangeDir(currentDir)
 	if err != nil {
 		return err
@@ -187,12 +199,14 @@ func checkPath(c *ftp.ServerConn, path string) error {
 	if path == configs.EmptyString {
 		return nil
 	}
+
 	err := c.ChangeDir(path)
 	if err != nil {
 		mkdirError := c.MakeDir(path)
 		if mkdirError != nil {
 			return err
 		}
+
 		changeError := c.ChangeDir(path)
 		if changeError != nil {
 			return err

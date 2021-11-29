@@ -31,9 +31,9 @@ func FileHandle(u *url.URL) {
 // 传入类型 *url.URL
 func FtpSftpHandle(u *url.URL) {
 	userName := u.User.Username()
-	if userName == "" {
+	if userName == configs.EmptyString {
 		userName = *configs.User
-		if userName == "" {
+		if userName == configs.EmptyString {
 			log.Fatalf("can not get ftp user")
 		}
 	}
@@ -67,11 +67,11 @@ func FtpSftpHandle(u *url.URL) {
 	}
 
 	switch u.Scheme {
-	case "ftp":
+	case configs.FtpScheme:
 		api = &ftpsftp.BasicFtp{
 			BasicStruct: basicStruct,
 		}
-	case "sftp":
+	case configs.SftpScheme:
 		api = &ftpsftp.BasicSftp{
 			BasicStruct: basicStruct,
 		}

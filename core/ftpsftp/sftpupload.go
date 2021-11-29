@@ -33,6 +33,7 @@ func (bsf *BasicSftp) Upload() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if fileInfo.IsDir() {
 		bsf.uploadDir(local) // 文件夹上传
 	} else {
@@ -61,9 +62,9 @@ func (bsf *BasicSftp) uploadDir(localDir string) {
 		}(i)
 	}
 	wg.Wait()
-
 }
 
+// sftp多线程上传
 func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 	thread := "[sftp-upload-thread-" + strconv.Itoa(i) + "]:"
 	c, err := bsf.login()
@@ -77,6 +78,7 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 		relative := strings.TrimPrefix(tr.site, local)
 		sftpFile := filepath.Join(bsf.Path, relative)
 		sftpDir := filepath.ToSlash(sftpFile)
+
 		if tr.tp == configs.File {
 			sftpDir = filepath.Dir(sftpDir)
 		}
@@ -87,6 +89,7 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		if tr.tp == configs.Dir {
 			continue
 		}
@@ -95,6 +98,7 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		end := float64(time.Now().UnixNano())
 		fmt.Printf("%s upload %s success totol-size:%d waste-time:%.2fms\n",
 			thread,
@@ -108,9 +112,11 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 	if err != nil {
 		return err
 	}
+
 	if bsf.Reg != nil && bsf.Reg.FindString(info.Name()) == configs.EmptyString {
 		return nil
 	}
+
 	var tr transport
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
@@ -126,12 +132,13 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 
 // sftp 上传单个文件
 func (bsf *BasicSftp) uploadFile(fileInfo os.FileInfo) {
-	start := float64(time.Now().UnixNano())
 	c, err := bsf.login()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Close()
+
+	start := float64(time.Now().UnixNano())
 
 	// sftp 路径检查
 	err = cmSftpPath(c, bsf.Path)
@@ -146,6 +153,7 @@ func (bsf *BasicSftp) uploadFile(fileInfo os.FileInfo) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	end := float64(time.Now().UnixNano())
 	fmt.Printf("sftp upload %s success totol-size:%d waste-time:%.2fms\n",
 		local,

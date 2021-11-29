@@ -21,28 +21,15 @@ import (
 	"time"
 )
 
-// sftp下载路由
+// sftp下载时入口
 func (bsf *BasicSftp) Download() {
-	// 下载时本地必须是一个文件夹
 	local := strings.TrimSpace(*configs.Download)
-	localInfo, err := os.Stat(local)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err := os.MkdirAll(local, 0644)
-			if err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Fatal(err)
-		}
-	} else if !localInfo.IsDir() {
-		log.Fatal("local path is not a dir")
-	}
+	downloadPathIsDir(local)
 
 	if strings.HasSuffix(bsf.Path, "/") {
-		bsf.downloadDir(local)
+		bsf.downloadDir(local) // sftp 下载文件夹
 	} else {
-		bsf.downloadFile(local)
+		bsf.downloadFile(local) // sftp 下载单个文件
 	}
 }
 
@@ -58,6 +45,7 @@ func (bsf *BasicSftp) downloadDir(local string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if !spInfo.IsDir() {
 		log.Fatal("ftp path is not a dir")
 	}
@@ -74,6 +62,7 @@ func (bsf *BasicSftp) downloadDir(local string) {
 		close(trChan)
 		wg.Done()
 	}()
+
 	for i := 0; i < *configs.Currency; i++ {
 		wg.Add(1)
 		go func(i int) {
@@ -84,11 +73,13 @@ func (bsf *BasicSftp) downloadDir(local string) {
 	wg.Wait()
 }
 
+// 往channel通道传输消息
 func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
 	fileInfo := walker.Stat()
 	if bsf.Reg != nil && bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
 		return transport{}, false
 	}
+
 	var tr transport
 	tr.name = fileInfo.Name()
 	if fileInfo.IsDir() {
@@ -96,24 +87,27 @@ func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
 	} else {
 		tr.tp = configs.File
 	}
+
 	tr.size = uint64(fileInfo.Size())
 	tr.site = walker.Path()
 	filePath := tr.site
+
 	if strings.HasPrefix(filePath, "/") {
 		filePath = strings.TrimLeft(filePath, "/")
 	}
+
 	tmp := ""
 	if strings.HasPrefix(bsf.Path, "/") {
 		tmp = strings.TrimLeft(bsf.Path, "/")
 	} else if strings.HasPrefix(bsf.Path, "./") {
 		tmp = strings.TrimLeft(bsf.Path, "./")
 	}
+
 	tr.relative = strings.TrimPrefix(filePath, tmp)
 	return tr, true
 }
 
 func (bsf *BasicSftp) downloadRangFile(i int, local string) {
-	start := float64(time.Now().UnixNano())
 	thread := "[sftp-download-thread-" + strconv.Itoa(i) + "]:"
 	c, err := bsf.login()
 	if err != nil {
@@ -122,11 +116,13 @@ func (bsf *BasicSftp) downloadRangFile(i int, local string) {
 	defer c.Close()
 
 	for tr := range trChan {
+		start := float64(time.Now().UnixNano())
 		localPath := filepath.Join(local, tr.relative)
 		dir := localPath
 		if tr.tp != configs.Dir {
 			dir = filepath.Dir(localPath)
 		}
+
 		err = cmLocalDir(dir)
 		if err != nil {
 			log.Fatalf("%s check dir err %s", thread, err)
@@ -150,26 +146,6 @@ func (bsf *BasicSftp) downloadRangFile(i int, local string) {
 	}
 }
 
-// 检查或者创建本地文件夹
-func cmLocalDir(dir string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
-	fileInfo, err := os.Stat(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err := os.MkdirAll(dir, 0644)
-			if err != nil {
-				return err
-			}
-		} else {
-			return err
-		}
-	} else if !fileInfo.IsDir() {
-		return fmt.Errorf("%s exist, but is not a dir", dir)
-	}
-	return nil
-}
-
 // 下载单个文件
 func (bsf *BasicSftp) downloadFile(local string) {
 	start := float64(time.Now().UnixNano())
@@ -183,15 +159,18 @@ func (bsf *BasicSftp) downloadFile(local string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if fileInfo.IsDir() {
 		log.Fatal("sftp path err or is not file")
 	}
+
 	localFile := filepath.ToSlash(filepath.Join(local, fileInfo.Name()))
 
 	err = downloadBase(c, bsf.Path, localFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	end := float64(time.Now().UnixNano())
 	fmt.Printf("download %s success totol-size:%d waste-time:%.2fms\n",
 		local,

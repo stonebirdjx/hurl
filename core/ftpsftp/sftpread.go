@@ -43,6 +43,7 @@ func (bsf *BasicSftp) readFile() {
 		log.Fatal(err)
 	}
 	defer f.Close()
+
 	bs := bufio.NewScanner(f)
 	switch bsf.Reg {
 	case nil:
@@ -70,6 +71,7 @@ func (bsf *BasicSftp) readDir() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	// 先判断是否有正则
 	switch bsf.Reg {
 	case nil:
@@ -85,7 +87,6 @@ func (bsf *BasicSftp) readDirDealMode(fileInfos []fs.FileInfo) {
 	for _, fileInfo := range fileInfos {
 		bsf.readDirPrint(fileInfo)
 	}
-
 }
 
 // 判断正则信息后打印
@@ -131,6 +132,7 @@ func (bsf *BasicSftp) walkDir() {
 		log.Fatal(err)
 	}
 	defer c.Close()
+
 	walker := c.Walk(bsf.Path)
 	switch bsf.Reg {
 	case nil:
