@@ -12,6 +12,7 @@ import (
 	"github.com/tidwall/gjson"
 	"hurl/configs"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -35,6 +36,8 @@ type BasicHttp struct {
 func (bh *BasicHttp) Entrance() {
 	if *configs.MultiPart {
 		bh.multipart()
+	} else {
+		bh.request()
 	}
 }
 
@@ -72,6 +75,12 @@ func otherRequest(res *http.Response) {
 	saveName := strings.TrimSpace(*configs.Ho)
 	if saveName != configs.EmptyString {
 		saveResContent(saveName, res)
+	} else {
+		b, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(b))
 	}
 }
 

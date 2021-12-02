@@ -87,7 +87,14 @@ func (b *BasicFile) readDirPrint(fileInfo fs.FileInfo) {
 
 // walk文件夹信息
 func (b *BasicFile) walkDir() {
-	err := filepath.Walk(b.Path, b.visit)
+	var err error
+	switch b.Reg {
+	case nil:
+		err = filepath.Walk(b.Path, b.visit) // 没配正则执行
+	default:
+		err = filepath.Walk(b.Path, b.visitReg) // 正则执行
+	}
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -95,25 +102,45 @@ func (b *BasicFile) walkDir() {
 
 // walk函数的visit子函数
 func (b *BasicFile) visit(path string, info os.FileInfo, err error) error {
-	if err != nil {
+	if ok, err := b.visitBase(info, err); err != nil {
 		return err
+	} else if !ok {
+		return nil
 	}
+
+	fmt.Println(path)
+	return nil
+}
+
+// walk函数的visit子函数正则
+func (b *BasicFile) visitReg(path string, info os.FileInfo, err error) error {
+	if ok, err := b.visitBase(info, err); err != nil {
+		return err
+	} else if !ok {
+		return nil
+	}
+
+	if b.Reg.FindString(info.Name()) != configs.EmptyString {
+		fmt.Println(path)
+	}
+
+	return nil
+}
+
+func (b *BasicFile) visitBase(info os.FileInfo, err error) (bool, error) {
+	if err != nil {
+		return false, err
+	}
+
 	switch b.Mode {
 	case configs.File:
 		if info.IsDir() {
-			return nil
+			return false, nil
 		}
 	case configs.Dir:
 		if !info.IsDir() {
-			return nil
+			return false, nil
 		}
 	}
-	if b.Reg != nil {
-		if b.Reg.FindString(path) != configs.EmptyString {
-			fmt.Println(path)
-		}
-	} else {
-		fmt.Println(path)
-	}
-	return nil
+	return true, nil
 }

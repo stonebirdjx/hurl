@@ -40,13 +40,20 @@ func (bf *BasicFtp) uploadDir(local string) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		err := filepath.Walk(local, bf.visit)
+		defer close(trChan)
+		var err error
+		switch bf.Reg {
+		case nil:
+			err = filepath.Walk(local, bf.visit)
+		default:
+			err = filepath.Walk(local, bf.visitReg)
+		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		close(trChan)
 		wg.Done()
 	}()
+
 	for i := 0; i < *configs.Currency; i++ {
 		wg.Add(1)
 		go func(i int) {
@@ -68,9 +75,10 @@ func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 
 	for tr := range trChan {
 		start := float64(time.Now().UnixNano())
-		relative := strings.TrimPrefix(tr.site, local)
-		ftpFile := filepath.Join(bf.Path, relative)
-		ftpDir := filepath.ToSlash(ftpFile)
+		relative := strings.TrimPrefix(filepath.ToSlash(tr.site), filepath.ToSlash(local))
+		ftpFile := filepath.ToSlash(filepath.Join(bf.Path, relative))
+		ftpDir := ftpFile
+
 		if tr.tp == configs.File {
 			ftpDir = filepath.Dir(ftpDir)
 		}
@@ -101,14 +109,10 @@ func (bf *BasicFtp) uploadRangeFile(i int, local string) {
 
 func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	fp = filepath.ToSlash(fp)
-	if bf.Reg != nil && bf.Reg.FindString(info.Name()) == configs.EmptyString {
-		return nil
-	}
-
 	var tr transport
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
@@ -119,6 +123,23 @@ func (bf *BasicFtp) visit(fp string, info os.FileInfo, err error) error {
 	}
 	tr.site = fp
 	trChan <- tr
+	return nil
+}
+
+func (bf *BasicFtp) visitReg(fp string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+
+	if bf.Reg.FindString(info.Name()) == configs.EmptyString {
+		return nil
+	}
+
+	err = bf.visit(fp, info, err)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

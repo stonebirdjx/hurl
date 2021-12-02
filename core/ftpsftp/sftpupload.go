@@ -46,11 +46,18 @@ func (bsf *BasicSftp) uploadDir(localDir string) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		err := filepath.Walk(localDir, bsf.visit)
+		defer close(trChan)
+		var err error
+		switch bsf.Reg {
+		case nil:
+			err = filepath.Walk(localDir, bsf.visit)
+		default:
+			err = filepath.Walk(localDir, bsf.visitReg)
+		}
+
 		if err != nil {
 			log.Fatal(err)
 		}
-		close(trChan)
 		wg.Done()
 	}()
 
@@ -75,9 +82,9 @@ func (bsf *BasicSftp) uploadRangeFile(i int, local string) {
 
 	for tr := range trChan {
 		start := float64(time.Now().UnixNano())
-		relative := strings.TrimPrefix(tr.site, local)
-		sftpFile := filepath.Join(bsf.Path, relative)
-		sftpDir := filepath.ToSlash(sftpFile)
+		relative := strings.TrimPrefix(filepath.ToSlash(tr.site), filepath.ToSlash(local))
+		sftpFile := filepath.ToSlash(filepath.Join(bsf.Path, relative))
+		sftpDir := sftpFile
 
 		if tr.tp == configs.File {
 			sftpDir = filepath.Dir(sftpDir)
@@ -113,10 +120,6 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 		return err
 	}
 
-	if bsf.Reg != nil && bsf.Reg.FindString(info.Name()) == configs.EmptyString {
-		return nil
-	}
-
 	var tr transport
 	tr.name = info.Name()
 	tr.size = uint64(info.Size())
@@ -127,6 +130,21 @@ func (bsf *BasicSftp) visit(path string, info os.FileInfo, err error) error {
 	}
 	tr.site = path
 	trChan <- tr
+	return nil
+}
+
+func (bsf *BasicSftp) visitReg(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		return err
+	}
+	if bsf.Reg.FindString(info.Name()) == configs.EmptyString {
+		return nil
+	}
+
+	err = bsf.visit(path, info, err)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

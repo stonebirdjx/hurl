@@ -26,7 +26,7 @@ func (bf *BasicFtp) Download() {
 	// 本地路径判断
 	downloadPathIsDir(local)
 
-	if strings.HasSuffix(bf.Path, "/") {
+	if strings.HasSuffix(bf.Path, "/") || strings.HasSuffix(bf.Path, "./") {
 		bf.downloadDir(local) //下载的是目录
 	} else {
 		bf.downloadFile(local) //下载的是文件
@@ -44,13 +44,14 @@ func (bf *BasicFtp) downloadDir(local string) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		defer close(trChan)
 		walker := c.Walk(bf.Path)
-		for walker.Next() {
-			if tr, ok := bf.toChan(walker); ok {
-				trChan <- tr
-			}
+		switch bf.Reg {
+		case nil:
+			bf.toChan(walker)
+		default:
+			bf.toChanReg(walker)
 		}
-		close(trChan)
 		wg.Done()
 	}()
 
@@ -64,33 +65,52 @@ func (bf *BasicFtp) downloadDir(local string) {
 	wg.Wait()
 }
 
-// chan消息处理
-func (bf *BasicFtp) toChan(walker *ftp.Walker) (transport, bool) {
-	entry := walker.Stat()
-	if bf.Reg != nil && bf.Reg.FindString(entry.Name) == configs.EmptyString {
-		return transport{}, false
+func (bf *BasicFtp) toChan(walker *ftp.Walker) {
+	for walker.Next() {
+		entry := walker.Stat()
+		tr := bf.toChanBase(entry, walker.Path())
+		trChan <- tr
 	}
+}
 
+func (bf *BasicFtp) toChanReg(walker *ftp.Walker) {
+	for walker.Next() {
+		entry := walker.Stat()
+		if bf.Reg.FindString(entry.Name) == configs.EmptyString {
+			continue
+		}
+
+		tr := bf.toChanBase(entry, walker.Path())
+		trChan <- tr
+	}
+}
+
+// chan消息处理
+func (bf *BasicFtp) toChanBase(entry *ftp.Entry, site string) transport {
 	var tr transport
 	tr.name = entry.Name
 	tr.tp = entry.Type.String()
 	tr.size = entry.Size
-	tr.site = walker.Path()
+	tr.site = site
 
 	filePath := tr.site
-	if strings.HasPrefix(filePath, "/") {
+	switch {
+	case strings.HasPrefix(filePath, "/"):
 		filePath = strings.TrimLeft(filePath, "/")
+	case strings.HasPrefix(bf.Path, "./"):
+		filePath = strings.TrimLeft(filePath, "./")
 	}
 
 	tmp := ""
-	if strings.HasPrefix(bf.Path, "/") {
+	switch {
+	case strings.HasPrefix(bf.Path, "/"):
 		tmp = strings.TrimLeft(bf.Path, "/")
-	} else if strings.HasPrefix(bf.Path, "./") {
+	case strings.HasPrefix(bf.Path, "./"):
 		tmp = strings.TrimLeft(bf.Path, "./")
 	}
 
 	tr.relative = strings.TrimPrefix(filePath, tmp)
-	return tr, true
+	return tr
 }
 
 // 多携程下载ftp文件
@@ -106,7 +126,7 @@ func (bf *BasicFtp) downloadRangFile(i int, local string) {
 		start := float64(time.Now().UnixNano())
 		localPath := filepath.Join(local, tr.relative)
 		dir := localPath
-		if tr.tp != configs.Dir {
+		if tr.tp != configs.Folder {
 			dir = filepath.Dir(localPath)
 		}
 
@@ -117,7 +137,7 @@ func (bf *BasicFtp) downloadRangFile(i int, local string) {
 		}
 
 		// 目录创建不下载
-		if tr.tp == configs.Dir {
+		if tr.tp == configs.Folder {
 			continue
 		}
 
@@ -178,6 +198,7 @@ func (bf *BasicFtp) downloadFile(local string) {
 func ftpDownloadBase(c *ftp.ServerConn, ftpFile, localFile string) error {
 	resp, err := c.Retr(ftpFile)
 	if err != nil {
+		fmt.Println("eee", err, ftpFile)
 		return err
 	}
 	defer resp.Close()

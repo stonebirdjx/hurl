@@ -26,7 +26,7 @@ func (bsf *BasicSftp) Download() {
 	local := strings.TrimSpace(*configs.Download)
 	downloadPathIsDir(local)
 
-	if strings.HasSuffix(bsf.Path, "/") {
+	if strings.HasSuffix(bsf.Path, "/") || strings.HasSuffix(bsf.Path, "./") {
 		bsf.downloadDir(local) // sftp 下载文件夹
 	} else {
 		bsf.downloadFile(local) // sftp 下载单个文件
@@ -53,13 +53,16 @@ func (bsf *BasicSftp) downloadDir(local string) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
+		defer close(trChan)
 		walker := c.Walk(bsf.Path)
-		for walker.Step() {
-			if tr, ok := bsf.toChan(walker); ok {
-				trChan <- tr
-			}
+		switch bsf.Reg {
+		case nil:
+			bsf.toChan(walker)
+		default:
+			bsf.toChanReg(walker)
+
 		}
-		close(trChan)
+
 		wg.Done()
 	}()
 
@@ -73,13 +76,28 @@ func (bsf *BasicSftp) downloadDir(local string) {
 	wg.Wait()
 }
 
-// 往channel通道传输消息
-func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
-	fileInfo := walker.Stat()
-	if bsf.Reg != nil && bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
-		return transport{}, false
+func (bsf *BasicSftp) toChan(walker *fs.Walker) {
+	for walker.Step() {
+		fileInfo := walker.Stat()
+		tr := bsf.toChanBase(fileInfo, walker.Path())
+		trChan <- tr
+	}
+}
+
+func (bsf *BasicSftp) toChanReg(walker *fs.Walker) {
+	for walker.Step() {
+		fileInfo := walker.Stat()
+		if bsf.Reg.FindString(fileInfo.Name()) == configs.EmptyString {
+			continue
+		}
+		tr := bsf.toChanBase(fileInfo, walker.Path())
+		trChan <- tr
 	}
 
+}
+
+// 往channel通道传输消息
+func (bsf *BasicSftp) toChanBase(fileInfo os.FileInfo, site string) transport {
 	var tr transport
 	tr.name = fileInfo.Name()
 	if fileInfo.IsDir() {
@@ -89,22 +107,26 @@ func (bsf *BasicSftp) toChan(walker *fs.Walker) (transport, bool) {
 	}
 
 	tr.size = uint64(fileInfo.Size())
-	tr.site = walker.Path()
+	tr.site = site
 	filePath := tr.site
 
-	if strings.HasPrefix(filePath, "/") {
+	switch {
+	case strings.HasPrefix(filePath, "/"):
 		filePath = strings.TrimLeft(filePath, "/")
+	case strings.HasPrefix(bsf.Path, "./"):
+		filePath = strings.TrimLeft(filePath, "./")
 	}
 
 	tmp := ""
-	if strings.HasPrefix(bsf.Path, "/") {
+	switch {
+	case strings.HasPrefix(bsf.Path, "/"):
 		tmp = strings.TrimLeft(bsf.Path, "/")
-	} else if strings.HasPrefix(bsf.Path, "./") {
+	case strings.HasPrefix(bsf.Path, "./"):
 		tmp = strings.TrimLeft(bsf.Path, "./")
 	}
 
 	tr.relative = strings.TrimPrefix(filePath, tmp)
-	return tr, true
+	return tr
 }
 
 func (bsf *BasicSftp) downloadRangFile(i int, local string) {
@@ -173,7 +195,7 @@ func (bsf *BasicSftp) downloadFile(local string) {
 
 	end := float64(time.Now().UnixNano())
 	fmt.Printf("download %s success totol-size:%d waste-time:%.2fms\n",
-		local,
+		bsf.Path,
 		fileInfo.Size(),
 		(end-start)/1e6)
 }
