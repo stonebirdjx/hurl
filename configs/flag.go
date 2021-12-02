@@ -32,7 +32,7 @@ var (
 	Regexp    = flag.String("re", "", "enter the regexp rule to match")
 	Upload    = flag.String("upload", "", "upload local path to ftp")
 	Download  = flag.String("download", "", "download ftp to local path")
-	ReadBytes = flag.Int64("byte", maxBytes, "byte array max length default 10M")
+	ReadBytes = flag.Int64("byte", maxBytes, "byte array max length default 1M")
 	User      = flag.String("user", "", "enter the user name")
 	Password  = flag.String("password", "", "enter the user password")
 	Currency  = flag.Int("u", 5, "enter the number of concurrent")
