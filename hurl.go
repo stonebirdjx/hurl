@@ -21,14 +21,17 @@ func main() {
 	if text == "" {
 		return
 	}
+
 	u, err := url.Parse(text)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	switch u.Scheme {
 	case configs.FileScheme, configs.EmptyString:
 		core.FileHandle(u)
 	case configs.HttpScheme, configs.HttpsScheme:
+		core.HttpHandle(u)
 	case configs.FtpScheme, configs.SftpScheme:
 		core.FtpSftpHandle(u)
 	default:
@@ -36,10 +39,12 @@ func main() {
 		if err != nil {
 			log.Fatal("hurl current support file, http, https, ftp, sftp protocol")
 		}
+
 		basicFile, err := file.NewBasicFiler(text)
 		if err != nil {
 			log.Fatal(err)
 		}
+
 		basicFile.Entrance()
 	}
 }
